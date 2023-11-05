@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testMind
+  namespace: mindapp_namespace  
+  labels:
+    app: testMind  
+spec:
+  replicas: 4  # тк 4 подов доствточно для пиковой нагрузки по результатм теста
+  selector:
+    matchLabels:
+      app: testMind  
+  template:
+    metadata:
+      labels:
+        app: testMind  
+    spec:
+      containers:
+      - name: testMind  
+        image: testMind_image:latest  # Образ контейнера и его версия
+        resources:
+          requests:
+            memory: "128Mi"  # Мин ОЗУ по условию
+            cpu: "200m"  # минимум cpu. 200m = 0,2cpu
+          limits:
+            memory: "128Mi"  # Макс ОЗУ по условию
+            cpu: "2000m"  # 2cpu, тк по условию на начальные запросы может быть востребовано ЗНАЧИТЕЛЬНО больше cpu чем стандартное 0.1
+
+#тк по условию для инициализации приложения необходимо 5-10 секунд для инициализации, то устанавливаю задержку
+#перед началом проверок 10 для Readiness и 15 для Liveness
+#периоды проверок 5 для Readiness и 10 для Liveness
+        readinessProbe:
+          httpGet:
+            path: /healthz  # путь для проверки готовности
+            port: 8080 #порт
+          initialDelaySeconds: 10  # время ожидания
+          periodSeconds: 5  # периодичность проверок 
+        livenessProbe:
+          httpGet:
+            path: /healthz  # путь для проверки готовности
+            port: 8080  #порт
+          initialDelaySeconds: 15  # время ожидания 
+          periodSeconds: 10  # периодичность проверок 
+
